@@ -1,0 +1,163 @@
+{
+  "client": {
+    "addr": "127.0.0.1",
+    "port": "6016",
+    "shortcuts": [
+      {
+        "key": "caps_lock",
+        "type": "keyboard",
+        "suppress": true,
+        "hold_mode": true,
+        "enabled": true
+      },
+      {
+        "key": "x2",
+        "type": "mouse",
+        "suppress": true,
+        "hold_mode": true,
+        "enabled": true
+      }
+    ],
+    "threshold": 0.3,
+    "paste": false,
+    "restore_clip": true,
+    "paste_apps": [
+      "WeiXin.exe",
+      "Telegram.exe"
+    ],
+    "enter_apps": [
+      [
+        "happ.exe",
+        0.5
+      ],
+      [
+        "hexin.exe",
+        0.5
+      ]
+    ],
+    "save_audio": false,
+    "history_retain_days": 30,
+    "microphone_on_demand": true,
+    "audio_name_len": 20,
+    "context": "",
+    "language": "auto",
+    "trash_punc": "，。,.",
+    "trash_punc_thresh": 8,
+    "trash_punc_apps": [
+      "WeiXin.exe"
+    ],
+    "traditional_convert": false,
+    "traditional_locale": "zh-hant",
+    "hot": true,
+    "hot_thresh": 0.85,
+    "hot_similar": 0.6,
+    "hot_rule": true,
+    "llm_enabled": true,
+    "llm_stop_key": "esc",
+    "enable_tray": true,
+    "log_level": "DEBUG",
+    "mic_seg_duration": 60,
+    "mic_seg_overlap": 4,
+    "file_seg_duration": 60,
+    "file_seg_overlap": 4,
+    "file_save_srt": true,
+    "file_save_txt": true,
+    "file_save_json": true,
+    "file_save_merge": false,
+    "udp_broadcast": false,
+    "udp_broadcast_targets": [
+      [
+        "127.255.255.255",
+        6017
+      ]
+    ],
+    "udp_control": false,
+    "udp_control_addr": "127.0.0.1",
+    "udp_control_port": 6018,
+    "save_recognition": true
+  },
+  "server": {
+    "addr": "0.0.0.0",
+    "port": "6016",
+    "model_type": "qwen_asr",
+    "format_num": true,
+    "format_spell": true,
+    "enable_tray": true,
+    "log_level": "DEBUG",
+    "aligner_idle_timeout": 10,
+    "gpu_boost_enabled": false,
+    "gpu_boost_cmd": "nvidia-smi -lmc 9000",
+    "gpu_unboost_cmd": "nvidia-smi -rmc",
+    "gpu_unboost_timeout": 1,
+    "hotwords_path": "hot-server.txt"
+  },
+  "model_downloads": {
+    "models_page": "https://github.com/HaujetZhao/CapsWriter-Offline/releases/tag/models"
+  },
+  "model_paths": {
+    "model_dir": "models",
+    "paraformer_dir": "{model_dir}/Paraformer/speech_paraformer-large-vad-punc_asr_nat-zh-cn-16k-common-vocab8404-onnx",
+    "paraformer_model": "{paraformer_dir}/model.onnx",
+    "paraformer_tokens": "{paraformer_dir}/tokens.txt",
+    "punc_model_dir": "{model_dir}/Punct-CT-Transformer/sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12/model.onnx",
+    "sensevoice_dir": "{model_dir}/SenseVoice-Small/Sensevoice-Small-ONNX",
+    "sensevoice_encoder": "{sensevoice_dir}/SenseVoice-Encoder.fp16.onnx",
+    "sensevoice_decoder": "{sensevoice_dir}/SenseVoice-CTC.fp16.onnx",
+    "sensevoice_tokenizer": "{sensevoice_dir}/tokenizer.bpe.model",
+    "fun_asr_nano_gguf_dir": "{model_dir}/Fun-ASR-Nano/Fun-ASR-Nano-GGUF",
+    "fun_asr_nano_gguf_encoder_adaptor": "{fun_asr_nano_gguf_dir}/Fun-ASR-Nano-Encoder-Adaptor.fp16.onnx",
+    "fun_asr_nano_gguf_ctc": "{fun_asr_nano_gguf_dir}/Fun-ASR-Nano-CTC.fp16.onnx",
+    "fun_asr_nano_gguf_llm_decode": "{fun_asr_nano_gguf_dir}/Fun-ASR-Nano-Decoder.q5_k.gguf",
+    "fun_asr_nano_gguf_token": "{fun_asr_nano_gguf_dir}/tokens.txt",
+    "fun_asr_nano_gguf_hotwords": "hot-server.txt",
+    "qwen3_asr_gguf_dir": "{model_dir}/Qwen3-ASR/Qwen3-ASR-1.7B",
+    "qwen3_asr_gguf_encoder_frontend": "{qwen3_asr_gguf_dir}/qwen3_asr_encoder_frontend.onnx",
+    "qwen3_asr_gguf_encoder_backend": "{qwen3_asr_gguf_dir}/qwen3_asr_encoder_backend.onnx",
+    "qwen3_asr_gguf_llm_decode": "{qwen3_asr_gguf_dir}/qwen3_asr_llm.gguf",
+    "force_aligner_gguf_dir": "{model_dir}/Qwen3-ForcedAligner/Qwen3-ForcedAligner-0.6B",
+    "force_aligner_gguf_encoder_frontend": "{force_aligner_gguf_dir}/qwen3_aligner_encoder_frontend.int4.onnx",
+    "force_aligner_gguf_encoder_backend": "{force_aligner_gguf_dir}/qwen3_aligner_encoder_backend.int4.onnx",
+    "force_aligner_gguf_llm_decode": "{force_aligner_gguf_dir}/qwen3_aligner_llm.q5_k.gguf"
+  },
+  "paraformer": {
+    "num_threads": 4,
+    "sample_rate": 16000,
+    "feature_dim": 80,
+    "decoding_method": "greedy_search",
+    "provider": "cpu",
+    "debug": false
+  },
+  "sensevoice": {
+    "itn": true,
+    "onnx_provider": "CPU",
+    "top_k": 8,
+    "dml_pad_to": 30
+  },
+  "fun_asr_nano": {
+    "onnx_provider": "CPU",
+    "llm_use_gpu": true,
+    "vulkan_force_fp32": false,
+    "enable_ctc": true,
+    "n_predict": 512,
+    "n_threads": null,
+    "similar_threshold": 0.6,
+    "max_hotwords": 20,
+    "dml_pad_to": 30,
+    "verbose": false
+  },
+  "qwen_asr": {
+    "onnx_provider": "CPU",
+    "llm_use_gpu": true,
+    "n_ctx": 2048,
+    "chunk_size": 80.0,
+    "memory_num": 1,
+    "dml_pad_to": 30,
+    "verbose": false
+  },
+  "force_aligner": {
+    "onnx_provider": "CPU",
+    "llm_use_gpu": false,
+    "n_ctx": 4096,
+    "dml_pad_to": 30
+  }
+}

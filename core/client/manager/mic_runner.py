@@ -34,7 +34,8 @@ class MicRunner:
         TipsDisplay.show_mic_tips()
 
         # 3. 开启运行组件 (音频流、快捷键监听)
-        self.app.stream.start()
+        if not Config.microphone_on_demand:
+            self.app.stream.start()
         self.app.shortcut.start()
         
         # 4. 开启 UDP 控制 (如果启用)

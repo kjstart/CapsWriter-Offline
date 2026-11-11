@@ -15,6 +15,7 @@ from .llm_role_loader import RoleLoader
 from .llm_context import ContextManager
 from .llm_watcher import LLMFileWatcher
 from .llm_role_config import RoleConfig
+from core.tools.recognition_text import has_recognition_content
 from .llm_client_pool import ClientPool
 from .llm_message_builder import MessageBuilder
 from .llm_role_detector import RoleDetector
@@ -202,6 +203,11 @@ class LLMHandler:
             paste: 是否强制使用粘贴模式（None 则遵循配置）
             matched_hotwords: 潜在热词列表
         """
+        # 防止其他调用方把空白或纯标点发送给模型。
+        if not has_recognition_content(text):
+            return LLMResult(result='', role_name=None, processed=False,
+                             token_count=0, polish_time=0, input_text=text)
+
         import time
         from .llm_output_typing import handle_typing_mode, output_text
         from .llm_output_toast import handle_toast_mode

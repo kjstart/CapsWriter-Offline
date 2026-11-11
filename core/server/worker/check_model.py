@@ -62,7 +62,7 @@ def check_model() -> None:
         console.print(f'''
     [bold red]不支持的模型类型：{Config.model_type}[/bold red]
 
-    请在 config_server.py 中将 ServerConfig.model_type 设置为：
+    请在 config.json 中将 server.model_type 设置为：
     - 'fun_asr_nano'
     - 'sensevoice'
     - 'paraformer'

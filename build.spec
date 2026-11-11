@@ -159,7 +159,7 @@ a_2.binaries = filtered_binaries
 
 
 # 排除不要打包的模块（这些将作为源文件复制）
-private_module = ['core', 'config_client', 'config_server', 'LLM', ]
+private_module = ['core', 'config_client', 'config_server', 'settings', 'LLM', ]
 
 for which in (a_1, a_2):
     filtered = []
@@ -245,6 +245,8 @@ coll = COLLECT(
 # 复制额外所需的文件（只复制用户自己写的文件）
 my_files = [
     'config_client.py',
+    'settings.py',
+    'config.json',
     'config_server.py',
     'core_server.py',
     'core_client.py',

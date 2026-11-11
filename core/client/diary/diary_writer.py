@@ -14,6 +14,7 @@ from typing import Optional, List
 
 from core.client.state import console
 from . import logger
+from config_client import ClientConfig as Config
 
 
 # MD 文件头部模板
@@ -66,6 +67,8 @@ class DiaryWriter:
         Returns:
             写入的日记文件路径列表
         """
+        if not Config.save_recognition:
+            return []
         local_time = time.localtime(time_start)
         time_year = time.strftime('%Y', local_time)
         time_month = time.strftime('%m', local_time)

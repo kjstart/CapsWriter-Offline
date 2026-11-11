@@ -8,6 +8,8 @@
 from __future__ import annotations
 import asyncio
 import time
+from contextlib import suppress
+from config_client import ClientConfig as Config
 from threading import Event
 from typing import TYPE_CHECKING, Optional
 
@@ -71,62 +73,82 @@ class ShortcutTask:
         return self._recorder_class(self.app)
 
     def launch(self) -> None:
-        """启动录音任务"""
-        logger.info(f"[{self.shortcut.key}] 触发：开始录音")
-
-        # 记录开始时间
+        """调度录音；设备打开/关闭不阻塞系统键盘钩子。"""
+        if not self.app.stream.session_lock.acquire(blocking=False):
+            return
         self.recording_start_time = time.time()
         self.is_recording = True
+        self._stop_event = asyncio.Event()
+        self._cancel_requested = False
+        try:
+            self.task = asyncio.run_coroutine_threadsafe(self._run_recording(), self.app.loop)
+        except Exception:
+            self.is_recording = False
+            self.app.stream.session_lock.release()
+            raise
 
-        # 将开始标志放入队列
-        asyncio.run_coroutine_threadsafe(
-            self.state.queue_in.put({'type': 'begin', 'time': self.recording_start_time, 'data': None}),
-            self.app.loop
-        )
-
-        # 更新录音状态
-        self.state.start_recording(self.recording_start_time)
-
-        # 打印动画：正在录音
-        self._status.start()
-
-        # 启动识别任务
-        recorder = self._get_recorder()
-        self.task = asyncio.run_coroutine_threadsafe(
-            recorder.record_and_send(),
-            self.app.loop,
-        )
+    async def _run_recording(self) -> None:
+        recorder_task = None
+        try:
+            if Config.microphone_on_demand:
+                # 即使快速松键，也等待开麦完成后在 finally 中关闭，不能取消
+                # to_thread 后留下仍在后台打开的设备。
+                stream = await asyncio.to_thread(self.app.stream.start)
+                if stream is None:
+                    logger.warning("无法打开麦克风，本次录音已取消")
+                    return
+            if self._stop_event.is_set():
+                return
+            self.state.queue_in.put_nowait({
+                'type': 'begin', 'time': self.recording_start_time, 'data': None
+            })
+            self.state.start_recording(self.recording_start_time)
+            self._status.start()
+            recorder_task = asyncio.create_task(self._get_recorder().record_and_send())
+            stop_waiter = asyncio.create_task(self._stop_event.wait())
+            try:
+                # 录音处理异常退出时也释放麦克风，不等用户再次松键。
+                await asyncio.wait((recorder_task, stop_waiter), return_when=asyncio.FIRST_COMPLETED)
+            finally:
+                stop_waiter.cancel()
+                with suppress(asyncio.CancelledError):
+                    await stop_waiter
+            self.state.stop_recording()
+            if Config.microphone_on_demand:
+                await asyncio.to_thread(self.app.stream.stop)
+            if self._cancel_requested:
+                recorder_task.cancel()
+            else:
+                self.state.queue_in.put_nowait({
+                    'type': 'finish', 'time': time.time(), 'data': None
+                })
+            with suppress(asyncio.CancelledError):
+                await recorder_task
+        except Exception:
+            logger.exception("录音会话失败")
+        finally:
+            self.state.stop_recording()
+            if Config.microphone_on_demand:
+                await asyncio.to_thread(self.app.stream.stop)
+            if recorder_task is not None and not recorder_task.done():
+                recorder_task.cancel()
+                with suppress(asyncio.CancelledError):
+                    await recorder_task
+            self.is_recording = False
+            self._status.stop()
+            self.task = None
+            self.app.stream.session_lock.release()
 
     def cancel(self) -> None:
-        """取消录音任务（时间过短）"""
-        logger.debug(f"[{self.shortcut.key}] 取消录音任务（时间过短）")
-
+        """短按取消；由会话协程负责关闭可能正在打开的麦克风。"""
         self.is_recording = False
-        self.state.stop_recording()
-        self._status.stop()
-
-        self.task.cancel()
-        self.task = None
+        self._cancel_requested = True
+        self.app.loop.call_soon_threadsafe(self._stop_event.set)
 
     def finish(self) -> None:
-        """完成录音任务"""
-        logger.info(f"[{self.shortcut.key}] 释放：完成录音")
-
+        """结束录音并立即安排释放麦克风。"""
         self.is_recording = False
-        self.state.stop_recording()
-        self._status.stop()
-
-        asyncio.run_coroutine_threadsafe(
-            self.state.queue_in.put({
-                'type': 'finish',
-                'time': time.time(),
-                'data': None
-            }),
-            self.app.loop
-        )
-
-        # 执行 restore（可恢复按键 + 非阻塞模式）
-        # 阻塞模式下按键不会发送到系统，状态不会改变，不需要恢复
+        self.app.loop.call_soon_threadsafe(self._stop_event.set)
         if self.shortcut.is_toggle_key() and not self.shortcut.suppress:
             self._restore_key()
 

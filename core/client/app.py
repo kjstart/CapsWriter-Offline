@@ -34,6 +34,7 @@ from .output.text_output import TextOutput
 from .diary.diary_writer import DiaryWriter
 from core.tools.empty_working_set import empty_current_working_set
 from platform import system
+from core.tools.privacy_cleanup import cleanup_history
 
 
 
@@ -47,6 +48,7 @@ class CapsWriterClient:
         # 确保正确的工作目录
         self.base_dir = Path(__file__).parents[2]
         os.chdir(self.base_dir)
+        cleanup_history(self.base_dir, Config.history_retain_days)
             
         # 初始化事件循环
         self.loop = asyncio.new_event_loop()

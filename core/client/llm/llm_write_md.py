@@ -6,6 +6,7 @@ LLM 对话记录到 Markdown
 import time
 from pathlib import Path
 from os import makedirs
+from config_client import ClientConfig as Config
 
 
 # LLM 对话记录的文件头
@@ -31,6 +32,8 @@ def write_llm_md(input_text: str, polished_text: str, role_name: str, time_start
         time_start: 开始时间戳
         file_audio: 音频文件路径（可选）
     """
+    if not Config.save_recognition:
+        return
     # 格式化时间
     time_year = time.strftime('%Y', time.localtime(time_start))
     time_month = time.strftime('%m', time.localtime(time_start))

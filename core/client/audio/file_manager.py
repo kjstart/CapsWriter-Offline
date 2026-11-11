@@ -166,6 +166,9 @@ class AudioFileManager:
             logger.warning(f"文件不存在，无法重命名: {self.file_path}")
             return None
         
+        if not Config.save_recognition:
+            return self.file_path
+
         # 构建新文件名
         time_ymdhms = time.strftime("%Y%m%d-%H%M%S", time.localtime(time_start))
         

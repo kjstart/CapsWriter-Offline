@@ -24,6 +24,7 @@ from core.client.udp.udp_broadcaster import broadcast_output_udp
 from core.tools.zhconv import convert as zhconv_convert
 from core.client.audio.file_manager import AudioFileManager
 from core.client.llm.llm_write_md import write_llm_md
+from core.tools.recognition_text import has_recognition_content
 
 if TYPE_CHECKING:
     from core.client.state import ClientState
@@ -201,6 +202,12 @@ class ResultProcessor:
         if not message.is_final:
             return
 
+        # 无正文时结束本次任务，不触发热词、LLM、输入、回车或日记。
+        if not has_recognition_content(text):
+            self.state.pop_audio_file(message.task_id)
+            logger.debug("跳过无正文的最终识别结果")
+            return
+
         # 繁体转换
         if Config.traditional_convert:
             try:
@@ -220,6 +227,12 @@ class ResultProcessor:
         # 3. 正则替换
         text = self.hotword.get_rule_corrector().substitute(text)
         hotword_elapsed = time.monotonic() - hotword_start
+
+        # 用户的替换规则也可能把识别结果清空。
+        if not has_recognition_content(text):
+            self.state.pop_audio_file(message.task_id)
+            logger.debug("跳过替换后无正文的识别结果")
+            return
 
         # 保存最近一次识别结果
         self.state.last_recognition_text = text
@@ -291,8 +304,8 @@ class ResultProcessor:
                 file_manager.file_path = file_path
                 file_audio = file_manager.rename(text, message.time_start)
 
-            # 写入日记
-            self.diary.write(text, message.time_start, file_audio)
+        # 识别正文与音频分别控制；即使不保存音频也可以保存文字。
+        self.diary.write(text, message.time_start, file_audio)
 
         # LLM 结果显示和保存
         if Config.llm_enabled and llm_result and llm_result.processed:

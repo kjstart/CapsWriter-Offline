@@ -60,9 +60,9 @@ class LLMFileWatcher(FileSystemEventHandler):
 
         logger.debug("LLMFileWatcher 初始化完成")
 
-    def _is_llm_py_file(self, file_path: str) -> bool:
-        """检查是否是 LLM 目录下的有效 .py 文件"""
-        if not file_path.endswith(WatcherConstants.PY_EXTENSION):
+    def _is_llm_json_file(self, file_path: str) -> bool:
+        """检查是否是 LLM 目录下的有效 .json 文件"""
+        if not file_path.endswith('.json'):
             return False
         if WatcherConstants.CACHE_DIR in file_path:
             return False
@@ -86,8 +86,8 @@ class LLMFileWatcher(FileSystemEventHandler):
             self._watched_files[file_name]()
             return
 
-        # 检查是否是 LLM 目录下的 .py 文件
-        if not self._is_llm_py_file(file_path):
+        # 检查是否是 LLM 目录下的 .json 文件
+        if not self._is_llm_json_file(file_path):
             return
 
         self._schedule_reload(file_path)
@@ -99,7 +99,7 @@ class LLMFileWatcher(FileSystemEventHandler):
 
         file_path = str(event.src_path)
         
-        if not self._is_llm_py_file(file_path):
+        if not self._is_llm_json_file(file_path):
             return
 
         # 新文件创建，重新加载所有角色
@@ -112,7 +112,7 @@ class LLMFileWatcher(FileSystemEventHandler):
 
         file_path = str(event.src_path)
         
-        if not self._is_llm_py_file(file_path):
+        if not self._is_llm_json_file(file_path):
             return
 
         # 文件被删除，需要重新加载所有角色
@@ -126,8 +126,8 @@ class LLMFileWatcher(FileSystemEventHandler):
         src_path = str(event.src_path)
         dest_path = str(event.dest_path)
 
-        # 检查是否涉及 .py 文件
-        if not (self._is_llm_py_file(src_path) or self._is_llm_py_file(dest_path)):
+        # 检查是否涉及 .json 文件
+        if not (self._is_llm_json_file(src_path) or self._is_llm_json_file(dest_path)):
             return
 
         # 文件重命名，重新加载所有角色

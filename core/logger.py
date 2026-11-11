@@ -6,6 +6,7 @@ from pathlib import Path
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from rich.logging import RichHandler
+from core.tools.privacy_cleanup import prune_log
 
 
 class TruncatingFileHandler(RotatingFileHandler):
@@ -59,13 +60,19 @@ class Logger:
         file_log_level = getattr(logging, level.upper(), logging.INFO)
         console_log_level = logging.WARNING  # 控制台强制只打印 WARNING 及以上
 
+        from config_client import ClientConfig
+
         # 如果已经初始化过，更新级别并返回
         if name in cls._loggers:
             logger = cls._loggers[name]
             logger.setLevel(min(file_log_level, console_log_level))
-            for handler in logger.handlers:
+            for handler in list(logger.handlers):
                 if isinstance(handler, RotatingFileHandler):
-                    handler.setLevel(file_log_level)
+                    if not ClientConfig.save_recognition:
+                        logger.removeHandler(handler)
+                        handler.close()
+                    else:
+                        handler.setLevel(file_log_level)
                 elif isinstance(handler, logging.StreamHandler):
                     handler.setLevel(console_log_level)
             return logger
@@ -90,18 +97,21 @@ class Logger:
         # 1. 文件处理器（根据传入 level 记录）
         file_name_prefix = log_filename or name or 'root'
         log_file = os.path.join(log_dir, f'{file_name_prefix}_latest.log')
+        from config_client import ClientConfig
+        prune_log(Path(log_file), getattr(ClientConfig, 'history_retain_days', 30))
         formatter = logging.Formatter(
             fmt='%(asctime)s.%(msecs)03d %(levelname)-5s [%(filename)20s:%(lineno)-3d] %(message)s',
-            datefmt='%H:%M:%S'
+            datefmt='%Y-%m-%d %H:%M:%S'
         )
-        file_handler = TruncatingFileHandler(
-            log_file,
-            maxBytes=max_bytes,
-            encoding='utf-8'
-        )
-        file_handler.setLevel(file_log_level)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
+        if ClientConfig.save_recognition:
+            file_handler = TruncatingFileHandler(
+                log_file,
+                maxBytes=max_bytes,
+                encoding='utf-8'
+            )
+            file_handler.setLevel(file_log_level)
+            file_handler.setFormatter(formatter)
+            logger.addHandler(file_handler)
 
         # 2. 控制台处理器（固定 WARNING 及以上，使用 rich 渲染）
         stream_handler = RichHandler(

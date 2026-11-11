@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 import sounddevice as sd
+from config_client import ClientConfig as Config
 
 from core.client.state import console
 from . import logger
@@ -54,6 +55,9 @@ class AudioStreamManager:
         self.app = app
         self._channels = 1
         self._running = False  # 标志是否应该运行
+        # 所有快捷键共用一个麦克风和队列，不允许重叠会话。
+        self.session_lock = threading.Lock()
+        self._device_lock = threading.RLock()
 
     @property
     def state(self) -> ClientState:
@@ -95,11 +99,17 @@ class AudioStreamManager:
             return
         if not self._running:
             return
+        if Config.microphone_on_demand and not self.state.recording:
+            return
 
         logger.info("音频流意外结束，正在尝试重启...")
         self.reopen()
 
     def start(self) -> Optional[sd.InputStream]:
+        with self._device_lock:
+            return self._start()
+
+    def _start(self) -> Optional[sd.InputStream]:
         """
         启动音频流
 
@@ -124,10 +134,10 @@ class AudioStreamManager:
             logger.warning("无法获取音频设备名称（编码问题）")
         except sd.PortAudioError:
             logger.error("未找到麦克风设备")
-            input('按回车键退出')
-            sys.exit(1)
+            return None
 
         # 创建音频流
+        stream = None
         try:
             stream = sd.InputStream(
                 samplerate=self.SAMPLE_RATE,
@@ -149,6 +159,8 @@ class AudioStreamManager:
             return stream
 
         except sd.PortAudioError as e:
+            if stream is not None:
+                stream.close()
             logger.error(f"创建音频流失败: {e}", exc_info=True)
             if '-9999' in str(e):
                 console.print("""
@@ -161,10 +173,16 @@ class AudioStreamManager:
 """)
             return None
         except Exception as e:
+            if stream is not None:
+                stream.close()
             logger.error(f"创建音频流失败: {e}", exc_info=True)
             return None
 
     def stop(self) -> None:
+        with self._device_lock:
+            self._stop()
+
+    def _stop(self) -> None:
         """停止音频流"""
         if not self._running:
             return
@@ -190,6 +208,8 @@ class AudioStreamManager:
 
         # 停止旧流
         self.stop()
+        if Config.microphone_on_demand and not self.state.recording:
+            return None
 
         # 重载 PortAudio，更新设备列表
         try:
