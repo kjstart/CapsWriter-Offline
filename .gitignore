@@ -191,3 +191,4 @@ models/**/*.cfg
 # 保留隐私功能的回归测试
 !tests/test_privacy.py
 !tests/test_silent_recognition.py
+!tests/test_doubao_role.py
