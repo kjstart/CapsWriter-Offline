@@ -107,6 +107,7 @@ class ConfigTests(unittest.TestCase):
         self.settings = load('settings_test', 'settings.py')
 
     def test_config_validation_and_path_references(self):
+        self.assertFalse(self.settings.SETTINGS['client']['save_audio'])
         self.assertTrue(self.settings.SETTINGS['client']['save_recognition'])
         self.assertEqual(self.settings.SETTINGS['client']['history_retain_days'], 30)
         paths = self.settings.resolve_model_paths({'root': 'custom', 'file': '{root}/model.onnx'})

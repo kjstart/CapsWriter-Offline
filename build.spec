@@ -247,6 +247,8 @@ my_files = [
     'config_client.py',
     'settings.py',
     'config.json',
+    'Launch-CapsWriter.ps1',
+    'Launch-CapsWriter.cmd',
     'config_server.py',
     'core_server.py',
     'core_client.py',

@@ -180,6 +180,8 @@ my_files = [
     'config_client.py',
     'settings.py',
     'config.json',
+    'Launch-CapsWriter.ps1',
+    'Launch-CapsWriter.cmd',
     'core_client.py',
     'hot.txt',
     'hot-server.txt',
